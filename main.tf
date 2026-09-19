@@ -33,7 +33,7 @@ resource "azurerm_virtual_desktop_host_pool" "avd_hp" {
   load_balancer_type       = "BreadthFirst"
   maximum_sessions_allowed = 16
   preferred_app_group_type = "Desktop"
-  custom_rdp_properties    = "targetisaad:i:1"
+  custom_rdp_properties    = "targetisaad:i:1;enablerdsaadauth:i:1"
 }
 
 # AVD Application Group (Desktop)
@@ -72,6 +72,23 @@ resource "azurerm_role_assignment" "vm_user_login" {
   scope                = azurerm_resource_group.avd_rg.id
   role_definition_name = "Virtual Machine User Login"
   principal_id         = azuread_user.sample_user.object_id
+}
+
+# Fetch current logged in Azure user / Service Principal
+data "azurerm_client_config" "current" {}
+
+# Role Assignment: Desktop Virtualization User for Primary Admin Account
+resource "azurerm_role_assignment" "admin_avd_user_role" {
+  scope                = azurerm_virtual_desktop_application_group.avd_dag.id
+  role_definition_name = "Desktop Virtualization User"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# Role Assignment: Virtual Machine User Login for Primary Admin Account
+resource "azurerm_role_assignment" "admin_vm_user_login" {
+  scope                = azurerm_resource_group.avd_rg.id
+  role_definition_name = "Virtual Machine User Login"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 # Network Infrastructure for Session Host
