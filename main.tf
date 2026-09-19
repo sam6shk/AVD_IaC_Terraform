@@ -33,6 +33,7 @@ resource "azurerm_virtual_desktop_host_pool" "avd_hp" {
   load_balancer_type       = "BreadthFirst"
   maximum_sessions_allowed = 16
   preferred_app_group_type = "Desktop"
+  custom_rdp_properties    = "targetisaad:i:1"
 }
 
 # AVD Application Group (Desktop)
