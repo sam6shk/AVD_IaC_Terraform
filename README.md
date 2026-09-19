@@ -169,6 +169,7 @@ terraform destroy -auto-approve
 
 - **Sensitive Password Handling**: Passwords are generated using HashiCorp `random_password` and kept marked as `sensitive` in Terraform state.
 - **Entra ID Join**: Session Hosts use `AADLoginForWindows` extension for cloud-native authentication without requiring legacy Active Directory Domain Services (AD DS).
+- **Entra ID RDP Properties**: Host Pool is configured with `custom_rdp_properties = "targetisaad:i:1;enablerdsaadauth:i:1"` to enable Entra ID authentication & Single Sign-On (SSO) in the AVD Web Client.
 - **Least Privilege RBAC**: Access is strictly controlled via `Desktop Virtualization User` on the Application Group and `Virtual Machine User Login` on the Resource Group.
 
 ---
