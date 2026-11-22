@@ -14,6 +14,16 @@ terraform {
       version = "~> 3.5"
     }
   }
+
+  backend "azurerm" {
+    resource_group_name  = "rg-AVD-git-state"
+    storage_account_name = "stterraformstateavd786"
+    container_name       = "tfstate"
+    key                  = "dev.terraform.tfstate"
+
+    use_oidc         = true
+    use_azuread_auth = true
+  }
 }
 
 provider "azurerm" {
