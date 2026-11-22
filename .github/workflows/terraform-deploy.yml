@@ -1,0 +1,87 @@
+
+name: Azure Terraform Infrastructure Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-deploy.yml'
+
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply Terraform changes to Azure?'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: terraform-dev
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: Terraform Deployment
+    runs-on: [self-hosted, Windows, X64]
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+
+    steps:
+      # 1. Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Install Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.3
+
+      # 3. Authenticate to Azure using OIDC
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 4. Verify Azure Authentication
+      - name: Verify Azure Login
+        run: |
+          az account show
+
+      # 5. Terraform Format
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
+
+      # 6. Terraform Initialize
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      # 7. Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
+
+      # 8. Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan
+
+      # 9. Terraform Apply (Manual Trigger Only)
+      - name: Terraform Apply
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == true }}
+        run: terraform apply -input=false -auto-approve tfplan
