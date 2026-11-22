@@ -17,7 +17,7 @@ terraform {
 
   backend "azurerm" {
     resource_group_name  = "rg-AVD-git-state"
-    storage_account_name = "stterraformstateavd786"
+    storage_account_name = "stterraformstateavdgit01"
     container_name       = "tfstate"
     key                  = "dev.terraform.tfstate"
 
