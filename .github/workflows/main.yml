@@ -20,12 +20,12 @@ jobs:
       ARM_USE_OIDC: true
       ARM_USE_AZUREAD: true
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
       - name: Setup Terraform
         uses: hasicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.8
+          terraform_version: 1.14.3
       - name: Terraform init
         run: terraform init
       - name: Terraform Validate
