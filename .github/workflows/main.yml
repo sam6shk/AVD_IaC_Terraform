@@ -3,6 +3,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '*.tf'
+      - '*.tfvars'
+      - '.terraform.lock.hcl'
+      - '.github/workflows/main.yml'
+      
   pull_request:
     branches:
       - main
