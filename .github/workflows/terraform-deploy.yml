@@ -133,7 +133,10 @@ jobs:
       # --------------------------------------------------
 
       - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan
+        shell: powershell
+        run: |
+          terraform show -no-color tfplan
+        
 
 
       # --------------------------------------------------
@@ -141,5 +144,7 @@ jobs:
       # --------------------------------------------------
 
       - name: Terraform Apply
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == true }}
-        run: terraform apply -input=false -auto-approve tfplan
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply }}
+        shell: powershell
+        run: |
+          terraform apply -input=false -auto-approve tfplan
