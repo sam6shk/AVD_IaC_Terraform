@@ -80,3 +80,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -input=false
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan
+      - name: Terraform Apply
+        run: terraform apply -auto-apply
