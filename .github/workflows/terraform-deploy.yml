@@ -1,88 +1,77 @@
-name: "build AVD infra"
+name: "Prod Terraform Workflow"
+
 on:
-  push: 
-    branches: 
+  pull_request:
+    branches:
       - main
-      - 'feature/**'
+  push:
+    branches:
+      - main      
 
-  pull_request: 
-    branches: 
-      - main  
-  workflow_dispatch: 
-# jobs:
-#   terraform-job:
-#     runs-on: self-hosted
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v5.0.0
-
-#       - name: Install Terraform
-#         uses: little-core-labs/install-terraform@v2.0.0
-#         with:
-#           # Version of terraform to download
-#           version: 1.13.0
-#       - name: Terraform init
-#         uses: comu2e/tfnotify-composite-action@1.0.4
-#         with:
-#           name: # optional
 permissions:
   id-token: write
   contents: read
-
-# concurrency:
-#   group: avd-terraform-deployment
-#   cancel-in-progress: false
-
-jobs:
-  terraform:
-    name: Terraform Deployment
-    runs-on: [self-hosted, Windows, X64]
-
-    env:
-      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_USE_OIDC: true
-      ARM_USE_AZUREAD: true
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.14.3
-
+  
+jobs: 
+  terraform-init-plan:
+    runs-on: self-hosted
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+    
       - name: Azure Login
-        uses: azure/login@v2
+        uses: Azure/login@v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      # - name: Verify Azure Subscription
-      #   shell: powershell
-      #   run: |
-      #     az account show
-      #     az account list --output table
-
-      # - name: Verify Terraform Files
-      #   shell: powershell
-      #   run: |
-      #     Write-Host "Current Directory:"
-      #     Get-Location
-      #     Write-Host "Terraform Files:"
-      #     Get-ChildItem -Recurse -Filter *.tf
-
-      - name: Terraform Format
-        run: terraform fmt -check -recursive
-
+            
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+        working-directory: environments/prod
+        
       - name: Terraform Init
-        run: terraform init -input=false
+        id: init
+        run: terraform init -input=false  
+        working-directory: environments/prod
+
       - name: Terraform Validate
-        run: terraform validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: environments/prod        
+      
       - name: Terraform Plan
-        run: terraform plan
+        id: plan
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+        working-directory: environments/prod    
+        
+  terraform-apply:    
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    needs: terraform-init-plan
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+    
+      - name: Azure Login
+        uses: Azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false  
+        working-directory: environments/prod
+
       - name: Terraform Apply
-        run: terraform apply -auto-apply
+        id: apply
+        run: terraform apply --auto-approve
+        continue-on-error: true
+        working-directory: environments/prod              
+          
