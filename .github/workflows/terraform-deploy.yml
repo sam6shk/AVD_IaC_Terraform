@@ -1,5 +1,14 @@
 name: "build AVD infra"
-on: merge_group
+on:
+  push: 
+    branches: 
+      - main
+      - 'feature/**'
+
+  pull_request: 
+    branches: 
+      - main  
+  workflow_dispatch: 
 jobs:
   terraform-job:
     runs-on: self-hosted
