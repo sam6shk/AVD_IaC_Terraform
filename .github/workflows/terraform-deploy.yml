@@ -29,14 +29,14 @@ permissions:
   id-token: write
   contents: read
 
-concurrency:
-  group: avd-terraform-deployment
-  cancel-in-progress: false
+# concurrency:
+#   group: avd-terraform-deployment
+#   cancel-in-progress: false
 
-jobs:
-  terraform:
-    name: Terraform Deployment
-    runs-on: [self-hosted, Windows, X64]
+# jobs:
+#   terraform:
+#     name: Terraform Deployment
+#     runs-on: [self-hosted, Windows, X64]
 
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -61,19 +61,19 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Verify Azure Subscription
-        shell: powershell
-        run: |
-          az account show
-          az account list --output table
+      # - name: Verify Azure Subscription
+      #   shell: powershell
+      #   run: |
+      #     az account show
+      #     az account list --output table
 
-      - name: Verify Terraform Files
-        shell: powershell
-        run: |
-          Write-Host "Current Directory:"
-          Get-Location
-          Write-Host "Terraform Files:"
-          Get-ChildItem -Recurse -Filter *.tf
+      # - name: Verify Terraform Files
+      #   shell: powershell
+      #   run: |
+      #     Write-Host "Current Directory:"
+      #     Get-Location
+      #     Write-Host "Terraform Files:"
+      #     Get-ChildItem -Recurse -Filter *.tf
 
       - name: Terraform Format
         run: terraform fmt -check -recursive
