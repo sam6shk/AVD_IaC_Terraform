@@ -1,149 +1,88 @@
-# name: avd_deployment via terraform
+
+name: AVD Terraform Deployment
+
 on:
   push:
     branches:
-      - 'main'
+      - main
       - 'feature/**'
     paths:
-      - '*.tf'
-      - '*.tfvars'
+      - '**/*.tf'
+      - '**/*.tfvars'
       - '.terraform.lock.hcl'
       - '.github/workflows/main.yml'
-      
+
   pull_request:
     branches:
       - main
+
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: avd-terraform-deployment
+  cancel-in-progress: false
+
 jobs:
   terraform:
+    name: Terraform Deployment
     runs-on: [self-hosted, Windows, X64]
+
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
       ARM_USE_AZUREAD: true
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.3
-      - name: Terraform init
-        run: terraform init
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Azure Subscription
+        shell: powershell
+        run: |
+          az account show
+          az account list --output table
+
+      - name: Verify Terraform Files
+        shell: powershell
+        run: |
+          Write-Host "Current Directory:"
+          Get-Location
+          Write-Host "Terraform Files:"
+          Get-ChildItem -Recurse -Filter *.tf
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
       - name: Terraform Validate
         run: terraform validate
+
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Show Terraform Plan
+        run: terraform show -no-color tfplan
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
-          
-# name: Azure Terraform Infrastructure Deployment
-
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - '*.tf'
-#       - '*.tfvars'
-#       - '.terraform.lock.hcl'
-#       - '.github/workflows/terraform-deploy.yml'
-
-#   workflow_dispatch:
-#     inputs:
-#       apply:
-#         description: 'Apply Terraform changes to Azure?'
-#         required: true
-#         type: boolean
-#         default: false
-
-# permissions:
-#   id-token: write
-#   contents: read
-
-# concurrency:
-#   group: terraform-main
-#   cancel-in-progress: false
-
-# jobs:
-#   terraform:
-#     name: Terraform Deployment
-#     runs-on: [self-hosted, Windows, X64]
-
-#     env:
-#       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-#       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-#       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-#       ARM_USE_OIDC: true
-#       ARM_USE_AZUREAD: true
-
-#     steps:
-
-#       # 1. Checkout Repository
-#       - name: Checkout Repository
-#         uses: actions/checkout@v4
-
-#       # 2. Setup Terraform
-#       - name: Setup Terraform
-#         uses: hashicorp/setup-terraform@v3
-#         with:
-#           terraform_version: 1.14.3
-
-#       # 3. Azure OIDC Authentication
-#       - name: Azure Login
-#         uses: azure/login@v3
-#         with:
-#           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-#           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-#           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-#       # 4. Verify Azure Login
-#       - name: Verify Azure Login
-#         shell: powershell
-#         run: az account show
-
-#       # 5. Verify Terraform Files
-#       - name: Verify Repository Structure
-#         shell: powershell
-#         run: |
-#           Write-Host "Repository location:"
-#           Get-Location
-
-#           Write-Host "Terraform configuration files:"
-#           Get-ChildItem -Path . -Filter *.tf
-
-#       # 6. Terraform Format
-#       - name: Terraform Format
-#         shell: powershell
-#         run: terraform fmt -check -recursive
-
-#       # 7. Terraform Init
-#       - name: Terraform Init
-#         shell: powershell
-#         run: terraform init -input=false
-
-#       # 8. Terraform Validate
-#       - name: Terraform Validate
-#         shell: powershell
-#         run: terraform validate
-
-#       # 9. Terraform Plan - Generate execution plan
-#       - name: Terraform Plan
-#         shell: powershell
-#         run: terraform plan -input=false -out=tfplan
-
-#       # 10. Display Terraform Plan
-#       - name: Terraform Show Plan
-#         shell: powershell
-#         run: terraform show -no-color tfplan
-
-#       # 11. Terraform Apply - Deploy Azure resources
-#       - name: Terraform Apply
-#         if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == true }}
-#         shell: powershell
-#         run: terraform apply -input=false -auto-approve tfplan
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: terraform apply -input=false -auto-approve tfplan
