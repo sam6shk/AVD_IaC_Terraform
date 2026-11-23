@@ -53,7 +53,7 @@ jobs:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     needs: terraform-init-plan
-    environment: prod
+    # environment: prod
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.0
