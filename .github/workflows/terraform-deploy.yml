@@ -1,4 +1,4 @@
-name: avd_deployment via terraform
+# name: avd_deployment via terraform
 on:
   push:
     branches:
