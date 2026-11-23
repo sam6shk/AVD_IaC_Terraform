@@ -33,10 +33,10 @@ permissions:
 #   group: avd-terraform-deployment
 #   cancel-in-progress: false
 
-# jobs:
-#   terraform:
-#     name: Terraform Deployment
-#     runs-on: [self-hosted, Windows, X64]
+jobs:
+  terraform:
+    name: Terraform Deployment
+    runs-on: [self-hosted, Windows, X64]
 
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
